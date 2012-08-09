@@ -9,12 +9,15 @@ client
 /* Step 2: Override client.Command() to send input to the grabber if its active. */
 client/Command(T) {
 	if(src.grabber.isActive()) {
-		var/ok = src.grabber.receive(T);
-		src << "Returned from grabber: [ok]";
+		src.grabber.receive(T);
 	} else if(T == "blocking") {
 		spawn() src.TestBlocking();
 	} else if(T == "nonblocking") {
 		spawn() src.TestNonblocking();
+	} else if(T == "pw") {
+		spawn() src.TestPW();
+	} else if(T == "simple") {
+		spawn() src.TestSimpleQuestion();
 	} else {
 		src << "No grabbers active atm.";
 		src << "Type 'blocking' to test blocking input, and 'nonblocking' to test non-blocking input."
@@ -40,4 +43,17 @@ client/proc/TestNonblocking() {
 	src << "Entering client.TestNonblocking()...";
 	new /InputGrab(src, src, "win");
 	src << "Life goes on!";
+}
+
+/* Lets test questions too */
+client/proc/TestPW() {
+	var/Question/Password/PW = new(source = src, question = "Please enter a password.",
+									retryQuestion = "The password must be 8 characters or more.",
+									repeatQuestion = "Please type the same password again.");
+	src << "You typed in the password [PW.getValue()]";
+}
+
+client/proc/TestSimpleQuestion() {
+	var/Question/hi = new(source = src, question = "How are you doing?");
+	src << "You typed in: [hi.getValue()]";
 }

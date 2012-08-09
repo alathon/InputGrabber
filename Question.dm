@@ -4,13 +4,6 @@ Question
 			C << txt;
 		}
 
-Question
-	Number
-		__needRetry(v) {
-			return ("[text2num(v)]" != "[v]");
-		}
-
-	proc
 		getValue() {
 			return src.__value;
 		}
@@ -47,12 +40,6 @@ Question
 			}
 		}
 
-		__setupCallback(CallRequest/callReq) {
-			src.grab = new /InputGrab/(source, new /CallRequest(src, "  tryValue"));
-			src.callRequest = callReq;
-
-		}
-
 		__inputLoop() {
 			var/value;
 			do {
@@ -63,8 +50,23 @@ Question
 			return src.__value;
 		}
 
+		__act() {
+			sendToClient(source, question);
+			if(callRequest == null) {
+				src.__inputLoop();
+			} else {
+				src.grab = new /InputGrab/(source, new /CallRequest(src, "  tryValue"));
+			}
+		}
+
+		__initializedProperly() {
+			if(!src.source || !istype(src.source, /client)) return FALSE;
+			if(callRequest && !istype(callRequest, /CallRequest)) return FALSE;
+			return TRUE;
+		}
+
 	var
-		CallRequest/callRequest = null;
+		CallRequest/callRequest;
 		InputGrab/grab;
 		client/source;
 		question = "";
@@ -73,13 +75,16 @@ Question
 		tries = 1;
 		__value;
 
-	New(client/C, qText, CallRequest/callReq) {
-		source = C;
-		question = qText;
-		sendToClient(C, question);
-		if(callReq == null) {
-			src.__inputLoop();
+	New(client/source, question, retryQuestion, tries, showTries, CallRequest/callRequest) {
+		src.source 			= source;
+		src.question		= question;
+		src.retryQuestion 	= retryQuestion;
+		src.tries			= tries;
+		src.callRequest		= callRequest;
+
+		if(__initializedProperly()) {
+			__act();
 		} else {
-			src.__setupCallback(callReq);
+			CRASH("Question not initialized properly.");
 		}
 	}
